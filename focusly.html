@@ -1,0 +1,207 @@
+<!--
+  ╔══════════════════════════════════════════╗
+  ║        POMODORO FOCUS TIMER              ║
+  ║  Developed by: Abdisalaam Salad Ali      ║
+  ║    
+  ╚══════════════════════════════════════════╝
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <title>Focusly</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f5f4f0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+    .wrap { display: flex; flex-direction: column; align-items: center; gap: 1.5rem; width: 100%; max-width: 360px; }
+    h1 { font-size: 18px; font-weight: 500; color: #333; letter-spacing: 0.03em; }
+
+    .mode-tabs { display: flex; gap: 6px; }
+    .mode-tabs button {
+      padding: 7px 14px; font-size: 13px;
+      border: 1px solid #ddd; border-radius: 8px;
+      background: #fff; color: #777; cursor: pointer;
+    }
+    .mode-tabs button.active { border-color: #888; color: #222; background: #efefef; font-weight: 500; }
+
+    .dots { display: flex; gap: 8px; }
+    .dot { width: 11px; height: 11px; border-radius: 50%; border: 1px solid #bbb; background: transparent; }
+    .dot.done { background: #1D9E75; border-color: #1D9E75; }
+    .dot.active { background: #378ADD; border-color: #378ADD; }
+
+    .circle { position: relative; width: 230px; height: 230px; }
+    .circle svg { position: absolute; top: 0; left: 0; transform: rotate(-90deg); }
+    .inner {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 4px;
+    }
+    .time { font-size: 52px; font-weight: 500; color: #222; letter-spacing: -2px; }
+    .mode-lbl { font-size: 13px; color: #888; }
+
+    .controls { display: flex; gap: 10px; }
+    .controls button {
+      padding: 10px 24px; font-size: 15px;
+      border: 1px solid #ccc; border-radius: 8px;
+      background: #fff; color: #222; cursor: pointer;
+    }
+    .controls button:active { background: #efefef; }
+    #startBtn { border-color: #888; font-weight: 500; }
+
+    .stats { display: flex; gap: 14px; }
+    .stat {
+      background: #fff; border-radius: 10px;
+      padding: 12px 24px; text-align: center;
+      border: 1px solid #e8e8e8; min-width: 90px;
+    }
+    .stat .val { font-size: 24px; font-weight: 500; color: #222; }
+    .stat .lbl { font-size: 11px; color: #999; margin-top: 2px; }
+
+    .tip-box { background: #f9f9f9; border: 1px solid #e8e8e8; border-radius: 10px; padding: 10px 16px; width: 100%; }
+    .tip { font-size: 12px; color: #666; text-align: left; line-height: 2; }
+    .phone-tip { color: #444; }
+
+    @media (prefers-color-scheme: dark) {
+      body { background: #1a1a1a; }
+      h1, .time { color: #f0f0f0; }
+      .mode-tabs button { background: #2a2a2a; border-color: #444; color: #aaa; }
+      .mode-tabs button.active { background: #333; border-color: #777; color: #f0f0f0; }
+      .controls button { background: #2a2a2a; border-color: #444; color: #f0f0f0; }
+      .controls button:active { background: #333; }
+      .stat { background: #2a2a2a; border-color: #333; }
+      .stat .val { color: #f0f0f0; }
+      .tip { color: #555; }
+      circle[stroke="#e8e8e8"] { stroke: #333; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Focusly</h1>
+
+  <div class="mode-tabs">
+    <button class="active" onclick="setMode('focus')">Focus</button>
+    <button onclick="setMode('short')">Short break</button>
+    <button onclick="setMode('long')">Long break</button>
+  </div>
+
+  <div class="dots" id="dots"></div>
+
+  <div class="circle">
+    <svg width="230" height="230" viewBox="0 0 230 230">
+      <circle cx="115" cy="115" r="100" fill="none" stroke="#e8e8e8" stroke-width="7" />
+      <circle id="ring" cx="115" cy="115" r="100" fill="none" stroke="#378ADD" stroke-width="7"
+        stroke-linecap="round" stroke-dasharray="628.32" stroke-dashoffset="0"
+        style="transition: stroke-dashoffset 0.9s linear, stroke 0.3s;" />
+    </svg>
+    <div class="inner">
+      <div class="time" id="display">25:00</div>
+      <div class="mode-lbl" id="modeLbl">Focus session</div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button id="startBtn" onclick="toggle()">Start</button>
+    <button onclick="reset()">Reset</button>
+    <button onclick="skip()">Skip</button>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="val" id="sessCount">0</div><div class="lbl">Sessions</div></div>
+    <div class="stat"><div class="val" id="focusMin">0</div><div class="lbl">Focus mins</div></div>
+  </div>
+
+  <p class="tip" style="font-size:11px; color:#bbb;">Developed by Abdisalaam Salad Ali</p>
+</div>
+
+<script>
+  // Developed by: Abdisalaam Salad Ali
+  const MODES = {
+    focus: { label: 'Focus session', dur: 25 * 60, color: '#378ADD' },
+    short: { label: 'Short break',   dur: 5  * 60, color: '#1D9E75' },
+    long:  { label: 'Long break',    dur: 15 * 60, color: '#EF9F27' }
+  };
+  const CIRC = 628.32;
+  let mode = 'focus', running = false, interval = null;
+  let remaining = MODES.focus.dur, sessions = 0, focusSecs = 0, pomCycle = 0;
+
+  function fmt(s) {
+    return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+  }
+
+  function updateUI() {
+    const m = MODES[mode];
+    document.getElementById('display').textContent = fmt(remaining);
+    document.getElementById('modeLbl').textContent = m.label;
+    document.getElementById('ring').style.stroke = m.color;
+    document.getElementById('ring').style.strokeDashoffset = CIRC * (1 - remaining / m.dur);
+    document.getElementById('startBtn').textContent = running ? 'Pause' : 'Start';
+    document.getElementById('sessCount').textContent = sessions;
+    document.getElementById('focusMin').textContent = Math.round(focusSecs / 60);
+    document.querySelectorAll('.mode-tabs button').forEach((b, i) => {
+      b.classList.toggle('active', ['focus','short','long'][i] === mode);
+    });
+    renderDots();
+  }
+
+  function renderDots() {
+    const wrap = document.getElementById('dots');
+    wrap.innerHTML = '';
+    for (let i = 0; i < 4; i++) {
+      const d = document.createElement('div');
+      d.className = 'dot' + (i < pomCycle ? ' done' : '') + (i === pomCycle && mode === 'focus' ? ' active' : '');
+      wrap.appendChild(d);
+    }
+  }
+
+  function setMode(m) {
+    clearInterval(interval); running = false;
+    mode = m; remaining = MODES[m].dur;
+    updateUI();
+  }
+
+  function toggle() {
+    if (running) { clearInterval(interval); running = false; }
+    else {
+      running = true;
+      interval = setInterval(() => {
+        remaining--;
+        if (mode === 'focus') focusSecs++;
+        if (remaining <= 0) { clearInterval(interval); running = false; onComplete(); }
+        updateUI();
+      }, 1000);
+    }
+    updateUI();
+  }
+
+  function reset() { clearInterval(interval); running = false; remaining = MODES[mode].dur; updateUI(); }
+
+  function skip() { clearInterval(interval); running = false; onComplete(); }
+
+  function onComplete() {
+    if (mode === 'focus') {
+      sessions++;
+      pomCycle = (pomCycle + 1) % 4;
+      mode = pomCycle === 0 ? 'long' : 'short';
+    } else {
+      mode = 'focus';
+    }
+    remaining = MODES[mode].dur;
+    updateUI();
+  }
+
+  updateUI();
+</script>
+</body>
+</html>
